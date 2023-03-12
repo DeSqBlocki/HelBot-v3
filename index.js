@@ -55,8 +55,7 @@ function onConnected(address, port) {
 async function onMessage(channel, userstate, message, self) {
     if (self) { return }
     if (knownBots.has(userstate.username)) { return }
-
-    console.log(await getIDByName("desq_blocki"))
+    console.log(userstate.badges)
 
     if (message.toLowerCase().includes('caw')) {
         TwitchClient.say(channel, 'CAW!')
@@ -66,32 +65,37 @@ async function onMessage(channel, userstate, message, self) {
         TwitchClient.say(channel, 'KAW!')
     } else if (message.toLowerCase().includes('godimissher')) {
         TwitchClient.say(channel, "/me Please do not post your passwords in here, *David* PauseChamp")
-    } else if (message.toLowerCase().includes('dromei')) {
-        TwitchClient.say(channel, "/me Dromei is Baba")
     }
+    // else if (message.toLowerCase().includes('dromei')) {
+    //     TwitchClient.say(channel, "/me Dromei is Baba")
+    // }
 
     if (message.startsWith(process.env.TTV_Prefix)) {
-        const args = message.substring(1).split(" ")
-        let cmd = args[0]
-        switch (cmd) {
-            case "test":
-                TwitchClient.say(channel, "/me This is a test message")
-                break;
-            case "mode":
-                if(userstate.username === "desq_blocki"){
-                    let channelID = await getIDByName(channel.substring(1))
-                    updateChatMode(channelID, args[1])
-                }
-                break;
-            default:
-                break;
-        }
+        // const args = message.substring(1).split(" ")
+        // const cmd = args[0]
+        // switch (cmd) {
+        //     case "test":
+        //         TwitchClient.say(channel, "/me This is a test message")
+        //         break;
+        //     case "mode":
+        //         if(userstate.username === "desq_blocki"){
+        //             let channelID = await getIDByName(channel.substring(1))
+        //             updateChatMode(channelID, args[1])
+        //         }
+        //         break;
+        //     default:
+        //         break;
+        // }
     }
-    // if (userstate.badges.vip &! wasShoutedOut.includes(userstate.username)) {
-    if (userstate.badges.vip & !wasShoutedOut.includes(userstate.username)) {
+
+    // ---------------VIP Handler--------------------
+    if (!userstate.badges.vip) { return }
+    if (!wasShoutedOut.includes(userstate.username)) {
         autoShoutout(channel, userstate.username)
         wasShoutedOut.push(userstate.username)
     }
+    // ---------------------------------------------
+
 }
 function autoShoutout(channel, user) {
     buffer.set(user, channel) // add user to buffer
@@ -150,7 +154,7 @@ async function getVIPS(channel) {
     let result = await Helix.channel.vips(channel)
     return result.data
 }
-const { Client, GatewayIntentBits, EmbedBuilder, ActivityType } = require('discord.js')
+const { Client, GatewayIntentBits, EmbedBuilder, ActivityType, Events } = require('discord.js')
 const DiscordClient = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -159,7 +163,7 @@ const DiscordClient = new Client({
         GatewayIntentBits.GuildMessageReactions
     ]
 })
-DiscordClient.on("ready", readyHandler)
+DiscordClient.on(Events.ClientReady, readyHandler)
 
 async function createEmbed(channel) {
     const streamdata = await getStreamData(channel)
@@ -175,7 +179,7 @@ async function createEmbed(channel) {
 }
 async function readyHandler() {
     console.log("Connected to Discord")
-    DiscordClient.user.setActivity("being comfy", {
+    DiscordClient.user.setActivity("chaos & comf", {
         type: ActivityType.Streaming,
         url: "https://www.twitch.tv/desq_blocki"
     });
@@ -196,7 +200,7 @@ async function readyHandler() {
             await createEmbed(channel).then(embed => {
                 botchannel.send({
                     content: `<@&${process.env.DISCORD_RoleID}> im live <:comfAlt:1052913776049012736> <a:sparkles:963229266991001630>`,
-                    embeds: [ embed ]
+                    embeds: [embed]
                 })
             })
         }
