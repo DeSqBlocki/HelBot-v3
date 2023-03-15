@@ -24,16 +24,16 @@ const TwitchClient = new tmi.Client({
 
 TwitchClient.connect()
 
-// TwitchClient.on('connected', onConnected)
-// //does stuff when successfully connected
-// TwitchClient.on('message', onMessage)
-// //does stuff when messages are sent
-// TwitchClient.on('raided', onRaided)
-// //does stuff when channel is being raided
-// TwitchClient.on('hosted', onHosted)
-// //does stuff when channel is being hosted
-// TwitchClient.on('subscribers', onSubOnly)
-// //does stuff when entering subscriber only mode
+TwitchClient.on('connected', onConnected)
+//does stuff when successfully connected
+TwitchClient.on('message', onMessage)
+//does stuff when messages are sent
+TwitchClient.on('raided', onRaided)
+//does stuff when channel is being raided
+TwitchClient.on('hosted', onHosted)
+//does stuff when channel is being hosted
+TwitchClient.on('subscribers', onSubOnly)
+//does stuff when entering subscriber only mode
 
 function onRaided(channel, username, raiders) {
     TwitchClient.say(channel, `${username} raiding with ${raiders} viewers. Welcome to the moyder, raiders!`)
@@ -213,12 +213,7 @@ async function readyHandler() {
         streamers[1],
         async stream => {
             console.log(`${stream.broadcaster_user_login} went online`)
-            await createEmbed(stream.broadcaster_user_login).then(embed => {
-                testChannel.send({
-                    content: `<@&${process.env.DISCORD_RoleID}> im live <:comfAlt:1052913776049012736> <a:sparkles:963229266991001630>`,
-                    embeds: [embed]
-                })
-            })
+            testChannel.send(`${stream.broadcaster_user_login} went online`)
         }
     )
     EventSubClient.subscribe(
@@ -227,7 +222,7 @@ async function readyHandler() {
         stream => {
             console.log(`${stream.broadcaster_user_login} went offline`)
             updateChatMode(stream.broadcaster_user_id.toString(), "on")
-            testChannel.send('test')
+            testChannel.send(`${stream.broadcaster_user_login} went offline`)
         }
     )
 }
