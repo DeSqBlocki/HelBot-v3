@@ -227,6 +227,7 @@ async function readyHandler() {
         stream => {
             console.log(`${stream.broadcaster_user_login} went offline`)
             updateChatMode(stream.broadcaster_user_id.toString(), "on")
+            testChannel.send('test')
         }
     )
 }
