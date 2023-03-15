@@ -3,7 +3,7 @@ const tmi = require('tmi.js')
 require('dotenv').config()
 const Helix = new HelixAPI({
     client_id: process.env.TTV_ID,
-    access_token: process.env.TTV_Token_HelBot
+    access_token: process.env.TTV_Token
 });
 const channels = ['desq_blocki', 'x__hel__x']
 const knownBots = new Set(['streamlabs', 'nightbot', 'moobot', 'soundalerts', 'streamelements', 'remasuri_bot', 'commanderroot'])
@@ -23,6 +23,7 @@ const TwitchClient = new tmi.Client({
 })
 
 TwitchClient.connect()
+/*
 TwitchClient.on('connected', onConnected)
 //does stuff when successfully connected
 TwitchClient.on('message', onMessage)
@@ -33,7 +34,7 @@ TwitchClient.on('hosted', onHosted)
 //does stuff when channel is being hosted
 TwitchClient.on('subscribers', onSubOnly)
 //does stuff when entering subscriber only mode
-
+*/
 function onRaided(channel, username, raiders) {
     TwitchClient.say(channel, `${username} raiding with ${raiders} viewers. Welcome to the moyder, raiders!`)
     buffer.set(username.toLowerCase(), channel)
@@ -55,7 +56,6 @@ function onConnected(address, port) {
 async function onMessage(channel, userstate, message, self) {
     if (self) { return }
     if (knownBots.has(userstate.username)) { return }
-    console.log(userstate.badges)
 
     if (message.toLowerCase().includes('caw')) {
         TwitchClient.say(channel, 'CAW!')
@@ -66,9 +66,6 @@ async function onMessage(channel, userstate, message, self) {
     } else if (message.toLowerCase().includes('godimissher')) {
         TwitchClient.say(channel, "/me Please do not post your passwords in here, *David* PauseChamp")
     }
-    // else if (message.toLowerCase().includes('dromei')) {
-    //     TwitchClient.say(channel, "/me Dromei is Baba")
-    // }
 
     if (message.startsWith(process.env.TTV_Prefix)) {
         // const args = message.substring(1).split(" ")
@@ -76,12 +73,6 @@ async function onMessage(channel, userstate, message, self) {
         // switch (cmd) {
         //     case "test":
         //         TwitchClient.say(channel, "/me This is a test message")
-        //         break;
-        //     case "mode":
-        //         if(userstate.username === "desq_blocki"){
-        //             let channelID = await getIDByName(channel.substring(1))
-        //             updateChatMode(channelID, args[1])
-        //         }
         //         break;
         //     default:
         //         break;
@@ -133,7 +124,7 @@ async function updateChatMode(userID, setTo) {
     } else {
         return
     }
-    let modID = process.env.TTV_ModID_HelBot
+    let modID = process.env.TTV_ModID
     await Helix.chat.updateSettings(userID, modID, {
         follower_mode: state,
         follower_mode_duration: 0,
@@ -149,11 +140,7 @@ async function getStreamData(channel) {
     let result = await Helix.channel.get((channelID))
     return result.data[0]
 }
-async function getVIPS(channel) {
-    //currently using userstate.badges instead!
-    let result = await Helix.channel.vips(channel)
-    return result.data
-}
+
 const { Client, GatewayIntentBits, EmbedBuilder, ActivityType, Events } = require('discord.js')
 const DiscordClient = new Client({
     intents: [
@@ -189,15 +176,19 @@ async function readyHandler() {
     const testChannel = guild.channels.cache.get(process.env.DISCORD_TestChannelID)
 
     const EventSubClient = await Helix.EventSub.connect({ debug: false });
+    const streamers = [{
+        broadcaster_user_id: String(await getIDByName("x__hel__x"))
+    }, {
+        broadcaster_user_id: String(await getIDByName("desq_blocki"))
+    }]
+
+    // Hel Events
     EventSubClient.subscribe(
         "stream.online",
-        {
-            broadcaster_user_id: "278465199" //must match the user that authorized the access token
-        },
+        streamers[0],
         async stream => {
-            updateChatMode(stream.broadcaster_user_id.toString(), "off")
-            var channel = stream.broadcaster_user_login
-            await createEmbed(channel).then(embed => {
+            console.log(`${stream.broadcaster_user_login} went online`)
+            await createEmbed(stream.broadcaster_user_login).then(embed => {
                 botchannel.send({
                     content: `<@&${process.env.DISCORD_RoleID}> im live <:comfAlt:1052913776049012736> <a:sparkles:963229266991001630>`,
                     embeds: [embed]
@@ -207,10 +198,32 @@ async function readyHandler() {
     )
     EventSubClient.subscribe(
         "stream.offline",
-        {
-            broadcaster_user_id: "278465199" //must match the user that authorized the access token
-        },
+        streamers[0],
         stream => {
+            console.log(`${stream.broadcaster_user_login} went offline`)
+            updateChatMode(stream.broadcaster_user_id.toString(), "on")
+        }
+    )
+
+    // DeSqBlocki Events
+    EventSubClient.subscribe(
+        "stream.online",
+        streamers[1],
+        async stream => {
+            console.log(`${stream.broadcaster_user_login} went online`)
+            await createEmbed(stream.broadcaster_user_login).then(embed => {
+                testChannel.send({
+                    content: `<@&${process.env.DISCORD_RoleID}> im live <:comfAlt:1052913776049012736> <a:sparkles:963229266991001630>`,
+                    embeds: [embed]
+                })
+            })
+        }
+    )
+    EventSubClient.subscribe(
+        "stream.offline",
+        streamers[1],
+        stream => {
+            console.log(`${stream.broadcaster_user_login} went offline`)
             updateChatMode(stream.broadcaster_user_id.toString(), "on")
         }
     )
