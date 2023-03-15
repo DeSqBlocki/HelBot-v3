@@ -23,18 +23,18 @@ const TwitchClient = new tmi.Client({
 })
 
 TwitchClient.connect()
-/*
-TwitchClient.on('connected', onConnected)
-//does stuff when successfully connected
-TwitchClient.on('message', onMessage)
-//does stuff when messages are sent
-TwitchClient.on('raided', onRaided)
-//does stuff when channel is being raided
-TwitchClient.on('hosted', onHosted)
-//does stuff when channel is being hosted
-TwitchClient.on('subscribers', onSubOnly)
-//does stuff when entering subscriber only mode
-*/
+
+// TwitchClient.on('connected', onConnected)
+// //does stuff when successfully connected
+// TwitchClient.on('message', onMessage)
+// //does stuff when messages are sent
+// TwitchClient.on('raided', onRaided)
+// //does stuff when channel is being raided
+// TwitchClient.on('hosted', onHosted)
+// //does stuff when channel is being hosted
+// TwitchClient.on('subscribers', onSubOnly)
+// //does stuff when entering subscriber only mode
+
 function onRaided(channel, username, raiders) {
     TwitchClient.say(channel, `${username} raiding with ${raiders} viewers. Welcome to the moyder, raiders!`)
     buffer.set(username.toLowerCase(), channel)
@@ -68,15 +68,15 @@ async function onMessage(channel, userstate, message, self) {
     }
 
     if (message.startsWith(process.env.TTV_Prefix)) {
-        // const args = message.substring(1).split(" ")
-        // const cmd = args[0]
-        // switch (cmd) {
-        //     case "test":
-        //         TwitchClient.say(channel, "/me This is a test message")
-        //         break;
-        //     default:
-        //         break;
-        // }
+        const args = message.substring(1).split(" ")
+        const cmd = args[0]
+        switch (cmd) {
+            case "test":
+                //TwitchClient.say(channel, "/me This is a test message")
+                break;
+            default:
+                break;
+        }
     }
 
     // ---------------VIP Handler--------------------
@@ -172,8 +172,10 @@ async function readyHandler() {
     });
 
     const guild = DiscordClient.guilds.cache.get(process.env.DISCORD_GuildID)
-    const botchannel = guild.channels.cache.get(process.env.DISCORD_ChannelID)
-    const testChannel = guild.channels.cache.get(process.env.DISCORD_TestChannelID)
+    const channel = guild.channels.cache.get(process.env.DISCORD_ChannelID)
+
+    const testGuild = DiscordClient.guilds.cache.get(process.env.DISCORD_TestGuildID)
+    const testChannel = testGuild.channels.cache.get(process.env.DISCORD_TestChannelID)
 
     const EventSubClient = await Helix.EventSub.connect({ debug: false });
     const streamers = [{
@@ -189,7 +191,7 @@ async function readyHandler() {
         async stream => {
             console.log(`${stream.broadcaster_user_login} went online`)
             await createEmbed(stream.broadcaster_user_login).then(embed => {
-                botchannel.send({
+                channel.send({
                     content: `<@&${process.env.DISCORD_RoleID}> im live <:comfAlt:1052913776049012736> <a:sparkles:963229266991001630>`,
                     embeds: [embed]
                 })
