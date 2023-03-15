@@ -177,13 +177,14 @@ async function readyHandler() {
     const testGuild = DiscordClient.guilds.cache.get(process.env.DISCORD_TestGuildID)
     const testChannel = testGuild.channels.cache.get(process.env.DISCORD_TestChannelID)
 
-    const EventSubClient = await Helix.EventSub.connect({ debug: false });
     const streamers = [{
         broadcaster_user_id: String(await getIDByName("x__hel__x"))
     }, {
         broadcaster_user_id: String(await getIDByName("desq_blocki"))
     }]
 
+    const EventSubClient = await Helix.EventSub.connect({ debug: false });
+    
     // Hel Events
     EventSubClient.subscribe(
         "stream.online",
