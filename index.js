@@ -86,11 +86,11 @@ async function onMessage(channel, userstate, message, self) {
     }
 
     // ---------------VIP Handler--------------------
-    // if (!userstate.badges?.vip) { return }
-    // if (!wasShoutedOut.includes(userstate.username)) {
-    //     autoShoutout(channel, userstate.username)
-    //     wasShoutedOut.push(userstate.username)
-    // }
+    if (!userstate.badges?.vip) { return }
+    if (!wasShoutedOut.includes(userstate.username)) {
+        autoShoutout(channel, userstate.username)
+        wasShoutedOut.push(userstate.username)
+    }
     // ---------------------------------------------
 
 }
