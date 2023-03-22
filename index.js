@@ -74,17 +74,23 @@ async function onMessage(channel, userstate, message, self) {
             case "test":
                 //TwitchClient.say(channel, "/me This is a test message")
                 break;
+            case "mode":
+                if (userstate.username != "desq_blocki") { return }
+                let regex = /^(on|off)$/
+                if (!args[1].match(regex)) { return }
+                updateChatMode(await getIDByName(channel.substring(1)), args[1])
+                break;
             default:
                 break;
         }
     }
 
     // ---------------VIP Handler--------------------
-    if (!userstate.badges.vip) { return }
-    if (!wasShoutedOut.includes(userstate.username)) {
-        autoShoutout(channel, userstate.username)
-        wasShoutedOut.push(userstate.username)
-    }
+    // if (!userstate.badges?.vip) { return }
+    // if (!wasShoutedOut.includes(userstate.username)) {
+    //     autoShoutout(channel, userstate.username)
+    //     wasShoutedOut.push(userstate.username)
+    // }
     // ---------------------------------------------
 
 }
@@ -164,18 +170,25 @@ async function createEmbed(channel) {
         .setImage(imageUrl)
     return embed
 }
+async function notifyChannel(roleID, guildID, channelID, streamer) {
+    let guild = await DiscordClient.guilds.cache.get(guildID)
+    let channel = await guild.channels.cache.get(channelID)
+    console.log(channel.guild.name, channel.name)
+    await createEmbed(streamer)
+        .then(returnedEmbed => {
+            channel.send({
+                content: `<@&${roleID}> im live <:comfAlt:1052913776049012736> <a:sparkles:963229266991001630>`,
+                embeds: [returnedEmbed]
+            })
+        })
+        .catch(err => console.log(err))
+}
 async function readyHandler() {
     console.log("Connected to Discord")
     DiscordClient.user.setActivity("chaos & comf", {
         type: ActivityType.Streaming,
         url: "https://www.twitch.tv/desq_blocki"
     });
-
-    const guild = DiscordClient.guilds.cache.get(process.env.DISCORD_GuildID)
-    const channel = guild.channels.cache.get(process.env.DISCORD_ChannelID)
-
-    const testGuild = DiscordClient.guilds.cache.get(process.env.DISCORD_TestGuildID)
-    const testChannel = testGuild.channels.cache.get(process.env.DISCORD_TestChannelID)
 
     const streamers = [{
         broadcaster_user_id: String(await getIDByName("x__hel__x"))
@@ -184,47 +197,46 @@ async function readyHandler() {
     }]
 
     const EventSubClient = await Helix.EventSub.connect({ debug: false });
-    
+
     // Hel Events
-    EventSubClient.subscribe(
-        "stream.online",
-        streamers[0],
-        async stream => {
-            console.log(`${stream.broadcaster_user_login} went online`)
-            await createEmbed(stream.broadcaster_user_login).then(embed => {
-                channel.send({
-                    content: `<@&${process.env.DISCORD_RoleID}> im live <:comfAlt:1052913776049012736> <a:sparkles:963229266991001630>`,
-                    embeds: [embed]
-                })
-            })
-        }
-    )
-    EventSubClient.subscribe(
-        "stream.offline",
-        streamers[0],
-        stream => {
-            console.log(`${stream.broadcaster_user_login} went offline`)
-            updateChatMode(stream.broadcaster_user_id.toString(), "on")
-        }
-    )
+    {
+        EventSubClient.subscribe(
+            "stream.online",
+            streamers[0],
+            stream => {
+                console.log(`${stream.broadcaster_user_login} went online`)
+                notifyChannel(process.env.DISCORD_RoleID, process.env.DISCORD_GuildID, process.env.DISCORD_ChannelID, stream.broadcaster_user_login)
+            }
+        )
+
+        EventSubClient.subscribe(
+            "stream.offline",
+            streamers[0],
+            stream => {
+                console.log(`${stream.broadcaster_user_login} went offline`)
+                updateChatMode(stream.broadcaster_user_id.toString(), "on")
+            }
+        )
+    }
 
     // DeSqBlocki Events
-    EventSubClient.subscribe(
-        "stream.online",
-        streamers[1],
-        async stream => {
-            console.log(`${stream.broadcaster_user_login} went online`)
-            testChannel.send(`${stream.broadcaster_user_login} went online`)
-        }
-    )
-    EventSubClient.subscribe(
-        "stream.offline",
-        streamers[1],
-        stream => {
-            console.log(`${stream.broadcaster_user_login} went offline`)
-            updateChatMode(stream.broadcaster_user_id.toString(), "on")
-            testChannel.send(`${stream.broadcaster_user_login} went offline`)
-        }
-    )
+    {
+        EventSubClient.subscribe(
+            "stream.online",
+            streamers[1],
+            stream => {
+                console.log(`${stream.broadcaster_user_login} went online`)
+                notifyChannel(process.env.DISCORD_TestRoleID, process.env.DISCORD_TestGuildID, process.env.DISCORD_TestChannelID, stream.broadcaster_user_login)
+            }
+        )
+        EventSubClient.subscribe(
+            "stream.offline",
+            streamers[1],
+            stream => {
+                console.log(`${stream.broadcaster_user_login} went offline`)
+                updateChatMode(stream.broadcaster_user_id.toString(), "on")
+            }
+        )
+    }
 }
 DiscordClient.login(process.env.DISCORD_Token)
